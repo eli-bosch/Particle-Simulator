@@ -1,9 +1,7 @@
-
-// Eli Bosch, 3/12/24, Main java class for Assignment 5 (The og class \_|-o-|_/)
-//Works but you have to adjust wdith and the tail set new
-
 import javax.swing.JFrame;
-import java.util.Scanner;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.awt.Dimension;
 import java.awt.Toolkit;
 
@@ -12,7 +10,8 @@ public class Simulator extends JFrame
 	//Class references 
 	Model model = new Model(); 
 	View view = new View(model);
-	Controller controller = new Controller(model);
+	//Controller controller = new Controller(model);
+	private BufferedReader br;
 
 	static final int FRAME_SIZE = 1000;
 
@@ -25,50 +24,92 @@ public class Simulator extends JFrame
 		this.getContentPane().add(view);
 		this.pack();
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		this.setVisible(true);
-		view.addMouseListener(controller);
-		this.addKeyListener(controller);		
+		this.setVisible(false);
+		// view.addMouseListener(controller);
+		// this.addKeyListener(controller);		
+
+		this.br = new BufferedReader(new InputStreamReader(System.in));
 	}
 
 	public static void main(String[] args) // Just the main method
 	{
 		Simulator s = new Simulator();
-		s.run();
+		s.UserInterface();
 	}
 
-	public void run() // a while loop that constantly runs in the main method 
+	public void UserInterface()
 	{
-		view.createFolder("TestSim");
-		Scanner scanner = new Scanner(System.in);
-		System.out.println("'P' for playback or 'N' for new simulation");
-		String type = scanner.nextLine();
-		scanner.close();
+		String option = this.inputReader("Would you like to create a new simulation (\"N\"), or would you like to run a previously calculated simulation (\"P\")?");
+		
+		if(option.equals("N")) {
+			this.runNew();
+		} else if(option.equals("P")) {
+			this.runPrevious();
+		} else {
+			System.out.println("The option, \"" + option + "\", is not available, please choose again");
+			this.UserInterface();
+		}
 
-		while(true)
-		{
-			if(type.equals("P")) {
-				System.out.println("Playback");
-				view.playback = true;
-				view.folderPath = "TestSim";
-				view.repaint();
-			} else {
-				//The updates is repeated waiting for inputs
-				//controller.update();
-				System.out.println("New Sim");
-				view.playback = false;
-				model.update();
-				view.repaint(); // This will indirectly call View.paintComponent
-				view.captureFrame("frame", "TestSim");
-				Toolkit.getDefaultToolkit().sync(); // Updates screen
-			}
-			try
-			{
-				Thread.sleep(10); // sets the frame rate to 100 fps
-			} catch(Exception e) {
+	}
+
+	private void runPrevious()
+	{
+		String title = this.inputReader("What is the title of the previously calculated simulation?");
+
+		view.setOptions(true, title);
+		this.setVisible(true);
+		System.out.println("Running the previous simulation, \"" + title + "\"");
+
+		while(true) {
+			view.repaint();
+
+			try {      
+				Thread.sleep(15);
+			} catch (Exception e) {  
 				e.printStackTrace();
 				System.exit(1);
 			}
-			
 		}
+
+
+	}
+
+	private void runNew()
+	{
+		String title = this.inputReader("What would you like to title the new simulation?");
+
+		view.setOptions(false, title);
+		this.setVisible(true);
+		System.out.println("The new simulation, \"" + title + "\", is now being calculated");
+
+		while(true) {
+			model.update();
+			view.repaint();
+			view.captureFrame();
+			Toolkit.getDefaultToolkit().sync();
+
+			try {
+				Thread.sleep(10);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+	}
+
+	private String inputReader(String prompt) //Used to get user input
+	{
+		System.out.println(prompt);
+		String input = null;
+
+			while(input == null || input == "") {
+				try {
+					input = this.br.readLine();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+		return input;
 	}
 }

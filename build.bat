@@ -1,9 +1,9 @@
 ::@echo off
-javac Simulator.java View.java Controller.java Model.java Json.java Particle.java Frame.java Simulation.java
+javac -d bin Simulator.java Model.java Particle.java SpatialPartitioning.java View.java Pair.java
 
 if %errorlevel% neq 0 (
 	echo There was an error; exiting now.	
 ) else (
 	echo Compiled correctly!  Running Simulator...
-	java Simulator	
+	java -cp bin Simulator	
 )
