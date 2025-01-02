@@ -4,14 +4,17 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
-import java.util.Iterator;
+import java.util.ArrayList;
 
 public class View extends JPanel
 { 
-	//Variables for the View class
+	//Private class references
 	private Model model;
+
+	//Private view variables
 	private int frameCount;
 	private boolean playback;
+	private boolean doneRendering;
 	private String title;
 
 	//Customizable options - currently set to the default
@@ -21,10 +24,20 @@ public class View extends JPanel
 	//Constructor
 	public View(Model m)
 	{
+		//Class references
 		model = m;
+
+		//View variables
 		this.frameCount = 0;
 		this.playback = false;
 		this.title = "";
+		this.doneRendering = false;
+	}
+
+	//Used for playback
+	public boolean doneRendering()
+	{
+		return this.doneRendering;
 	}
 
 	//Setter Methods
@@ -75,36 +88,46 @@ public class View extends JPanel
 	//Jframe Painting Method
 	public void paintComponent(Graphics g)
 	{	
+		//Handles which method to call
 		if(!playback) { 
-			this.simCreation(g);
+
+			synchronized (model.getParticles()) {
+				this.simCreation(g);
+			}
 		} else {
 			this.playback(g);
 		}
 	}
 
-	private void simCreation(Graphics g) //Initial creation of the simulation
+	//Captures screenshot for playback
+	private void simCreation(Graphics g) 
 	{
-		g.setColor(new Color(0,0,0));
+		g.setColor(new Color(255,255,255));
 		g.fillRect(0, 0, Simulator.FRAME_SIZE, Simulator.FRAME_SIZE);
-			
-		Iterator<Particle> iterator = model.getParticles().iterator();  
+		g.setColor(Color.BLACK);
 
-		while(iterator.hasNext())
-		{
-			Particle temp = iterator.next();
+		ArrayList<Particle> particles;
 
-			if(temp.getMass() == 100) {
-				g.setColor(new Color(0, 0, 255));
-			} else if(g.getColor() != new Color(255, 0, 0)) {
-				g.setColor(new Color(255, 0, 0));
-			}	
+		synchronized (model.getParticles()) {
+			particles = new ArrayList<>(model.getParticles());
+		}
 
-			temp.draw(g);
+		for(Particle p : particles) {
+			p.draw(g);
 		}
 	}
 
 	private void playback(Graphics g) //Playback of the previously created simulation
 	{
+		File file = new File(this.title + "//" + this.frameName + this.frameCount + "." + this.imageType);
+
+		if(!file.exists()) { //Could run into issues if single frame is deleted in middle of simulation
+			System.out.println("The simulation playback is complete, and will exit");
+			this.doneRendering = true;
+			return;
+		}
+			
+
 		try 
 			{
 				BufferedImage frame = ImageIO.read(new File(this.title + "//" + this.frameName + this.frameCount + "." + this.imageType)); //Takes the screenshot and draws it onto screen

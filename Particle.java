@@ -1,17 +1,18 @@
-import java.awt.Color;
+/*
+ * Eli Bosch, Junior at the University of Arkansas, Computer Science, 1/1/25
+ */
+
 import java.awt.Graphics;
 
 public class Particle 
 {
     //Private Variables
     private int radius;
-    private double x, y, xVelocity, yVelocity, xAcceleration, yAcceleration, mass;
-
-    private final double gravity = .5; //FIX: Move gravity to model
+    private double x, y, xVelocity, yVelocity, mass, xAcceleration, yAcceleration;
 
     //Constructor Method
 
-    Particle(double x, double y, double xVelocity, double yVelocity, int radius, double mass, double xAcceleration, double yAcceleration)
+    Particle(double x, double y, double xVelocity, double yVelocity, int radius, double mass) //Particles store their own information
     {
         //JFrames have the Y-Axis flipped
         this.x = x;
@@ -20,23 +21,23 @@ public class Particle
         this.xVelocity = xVelocity;
         this.yVelocity = yVelocity;
 
-        this.xAcceleration = xAcceleration;
-        this.yAcceleration = yAcceleration;
+        this.xAcceleration = 0; //Not utilized but easy to adapt
+        this.yAcceleration = 0;
 
         this.radius = radius;
         this.mass = mass;
 
-        //this.atRest = false;
+        /* Other features that can be adapted to this simulation: 
+         * Temperature, Gravitational, Magnetism, and more */
     }
 
     //Getter Methods
-
-    public double getX()
+    public double x()
     {
         return this.x;
     }
 
-    public double getY()
+    public double y()
     {
         return this.y;
     }
@@ -56,7 +57,7 @@ public class Particle
         return this.xVelocity;
     }
 
-    public double getYVelocity()
+    public double yVelocity()
     {
         return this.yVelocity;
     }
@@ -71,7 +72,7 @@ public class Particle
         return this.yAcceleration;
     }
     
-    public int getRadius()
+    public int radius()
     {
         return this.radius;
     }
@@ -82,8 +83,7 @@ public class Particle
     }
 
     //Setter Methods
-
-    public void setX(double x)
+    public void x(double x)
     {
         this.x = x;
     }
@@ -124,26 +124,45 @@ public class Particle
     }
 
     //Update Method
-
-    public void update()
+    public void update() //Called every frame
     {
         this.handleGravity();
         this.handleMovement();
-        //this.handleRest();
+        this.handleWallCollision();
     }
 
     //Handle Methods
-
     private void handleMovement()
     {
         this.x += this.xVelocity;
         this.y += this.yVelocity; 
-        //System.out.println("X-Velocity: " + this.xVelocity + ", " + "Y-Velocity: " + this.yVelocity + ", y = " + this.y + ", x = " + this.x);
     }
 
     private void handleGravity()
     {
-       this.yVelocity += this.gravity;
+       this.yVelocity += Model.GRAVITY;
+    }
+
+    private void handleWallCollision()
+    {
+        if(this.y() + this.radius > 1000) { //Bottom Wall
+			this.y = (1000 - this.radius - Model.EPSILON);
+			this.yVelocity = (Model.COLLISION_BUFFER * (this.yVelocity * -1));
+
+		} 
+		else if(this.y() - this.radius < 0) { //Top Wall
+			this.y = (this.radius + Model.EPSILON);
+			this.yVelocity = (Model.COLLISION_BUFFER * (this.yVelocity * -1));
+		}
+
+		if(this.x() + this.radius > 1000) { //Right Wall
+			this.x = (1000 - this.radius - Model.EPSILON);
+			this.xVelocity = (Model.COLLISION_BUFFER * (this.xVelocity * -1));
+		} 
+		else if(this.x() - this.radius < 0) { //Left Wall
+			this.x = (this.radius + Model.EPSILON);
+			this.xVelocity = (Model.COLLISION_BUFFER * (this.xVelocity * -1));
+        }
     }
 
     //Draw Method
@@ -152,6 +171,7 @@ public class Particle
         g.fillOval((this.getRenderX() - this.radius), (this.getRenderY() - this.radius), this.radius*2, this.radius*2);
     }
 
+    //Debugging Method
     @Override
     public String toString()
     {
