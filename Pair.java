@@ -1,3 +1,7 @@
+/*
+ * Eli Bosch, Junior at the University of Arkansas, Computer Science, 1/1/25
+ */
+
 import java.util.Objects;
 
 class Pair<T, U> 
@@ -5,7 +9,8 @@ class Pair<T, U>
     private final T first;
     private final U second;
 
-    public Pair(T first, U second) 
+    //Custom class for collision optimization
+    public Pair(T first, U second) //Takes two objects and stores them
     {
         this.first = first;
         this.second = second;
@@ -22,7 +27,7 @@ class Pair<T, U>
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(Object o) //Checks if two pairs contain the same objects
     {
         if(this == o)
             return true;
@@ -32,7 +37,7 @@ class Pair<T, U>
         
         Pair<?, ?> pair = (Pair<?, ?>) o;
         
-        return Objects.equals(this.first, pair.first) && Objects.equals(this.second, pair.second);
+        return (Objects.equals(this.first, pair.first) && Objects.equals(this.second, pair.second) || Objects.equals(this.first, pair.second) && Objects.equals(this.second, pair.first));
     }
 
     @Override

@@ -1,4 +1,10 @@
+/*
+ * Eli Bosch, Junior at the University of Arkansas, Computer Science, 1/1/25
+ */
+
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,10 +14,11 @@ import java.awt.Toolkit;
 public class Simulator extends JFrame
 {
 	//Class references 
-	Model model = new Model(); 
+	Threads threadManager = new Threads();
+	Model model = new Model(threadManager); 
 	View view = new View(model);
-	//Controller controller = new Controller(model);
-	private BufferedReader br;
+	BufferedReader br;
+	
 
 	static final int FRAME_SIZE = 1000;
 
@@ -23,20 +30,35 @@ public class Simulator extends JFrame
 		this.setFocusable(true);
 		this.getContentPane().add(view);
 		this.pack();
-		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.setVisible(false);
-		// view.addMouseListener(controller);
-		// this.addKeyListener(controller);		
-
 		this.br = new BufferedReader(new InputStreamReader(System.in));
+
+		this.addWindowListener(new java.awt.event.WindowAdapter() { //Custom window close method for safe thread precedure
+			@Override
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				int choice = JOptionPane.showConfirmDialog(
+                Simulator.this,
+                "Are you sure you want to exit?",
+                "Exit Confirmation",
+                JOptionPane.YES_NO_OPTION
+            );
+
+				if (choice == JOptionPane.YES_OPTION) {
+					Simulator.this.safeClose();
+				}
+			}
+		});
 	}
 
-	public static void main(String[] args) // Just the main method
+	//Main Method
+	public static void main(String[] args)
 	{
 		Simulator s = new Simulator();
 		s.UserInterface();
 	}
 
+	//Handles user options
 	public void UserInterface()
 	{
 		String option = this.inputReader("Would you like to create a new simulation (\"N\"), or would you like to run a previously calculated simulation (\"P\")?");
@@ -50,8 +72,10 @@ public class Simulator extends JFrame
 			this.UserInterface();
 		}
 
+		//Other features that could be implemented: change fps, and actual UI outside of terminal
 	}
 
+	//Playback previous saved simulation
 	private void runPrevious()
 	{
 		String title = this.inputReader("What is the title of the previously calculated simulation?");
@@ -60,41 +84,57 @@ public class Simulator extends JFrame
 		this.setVisible(true);
 		System.out.println("Running the previous simulation, \"" + title + "\"");
 
-		while(true) {
+		while(!view.doneRendering()) {
 			view.repaint();
 
 			try {      
-				Thread.sleep(15);
+				Thread.sleep(15); //Framerate
 			} catch (Exception e) {  
 				e.printStackTrace();
 				System.exit(1);
 			}
 		}
 
-
+		this.safeClose();
 	}
 
+	//Create new simulation
 	private void runNew()
 	{
 		String title = this.inputReader("What would you like to title the new simulation?");
+		String numFrames = this.inputReader("How many ms would you like the simulation to be?");
+		int num = 0;
+
+		try {
+			num = Integer.parseInt(numFrames);
+		} catch (NumberFormatException e) {
+			System.out.println("That is a word not a number!");
+			this.safeClose();
+		}
 
 		view.setOptions(false, title);
 		this.setVisible(true);
 		System.out.println("The new simulation, \"" + title + "\", is now being calculated");
 
-		while(true) {
+		while(!model.isDone()) {
+			model.setFrameAmount(num);
 			model.update();
-			view.repaint();
-			view.captureFrame();
-			Toolkit.getDefaultToolkit().sync();
-
+			
+			//Safe thread precedure for repaint method
 			try {
-				Thread.sleep(10);
+            	SwingUtilities.invokeAndWait(() -> { 
+                view.repaint();
+                view.captureFrame();
+            });
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
 		}
+
+		Toolkit.getDefaultToolkit().sync();
+
+		this.safeClose();
 	}
 
 	private String inputReader(String prompt) //Used to get user input
@@ -111,5 +151,13 @@ public class Simulator extends JFrame
 			}
 
 		return input;
+	}
+
+	//Used to make sure all threads are closed
+	private void safeClose() 
+	{
+		threadManager.shutdown();
+		Simulator.this.dispose();
+		System.exit(0);
 	}
 }
